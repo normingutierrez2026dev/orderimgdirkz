@@ -1,27 +1,14 @@
 import { useState, useCallback } from "react";
-import { Camera, Sparkles, Loader2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
+import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { supabase } from "@/integrations/supabase/client";
 import ImageStageColumn from "@/components/ImageStageColumn";
 import ImagePreviewModal from "@/components/ImagePreviewModal";
 import ChatInput from "@/components/ChatInput";
 import { toast } from "sonner";
-
-interface ImageItem {
-  id: string;
-  url: string;
-  name: string;
-  timestamp: Date;
-  reason?: string;
-}
-
-interface ChatMessage {
-  id: string;
-  text: string;
-  timestamp: Date;
-  type: "user" | "system";
-}
-
-type Stage = "before" | "process" | "after";
+import { extractExif } from "@/lib/exif";
+import type { ImageItem, ChatMessage, Stage } from "@/lib/types";
+import { stageLabels, sceneLabels } from "@/lib/types";
 
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -59,10 +46,12 @@ const Index = () => {
   });
   const [pendingImages, setPendingImages] = useState<ImageItem[]>([]);
   const [isClassifying, setIsClassifying] = useState(false);
+  const [manualCorrections, setManualCorrections] = useState(0);
+  const [totalClassified, setTotalClassified] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
-      text: "¡Bienvenido! Sube imágenes y la IA las clasificará automáticamente en Antes, Proceso y Después.",
+      text: "¡Bienvenido! Sube imágenes y la IA las clasificará automáticamente en Antes, Proceso y Después. Puedes arrastrar imágenes entre columnas si la IA se equivoca.",
       timestamp: new Date(),
       type: "system",
     },
@@ -76,17 +65,44 @@ const Index = () => {
     ]);
   };
 
+  // Drag & drop between columns
+  const handleDragEnd = useCallback((result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index)) return;
+
+    const srcStage = source.droppableId as Stage;
+    const dstStage = destination.droppableId as Stage;
+
+    setImages((prev) => {
+      const updated = { ...prev };
+      const srcList = [...updated[srcStage]];
+      const [moved] = srcList.splice(source.index, 1);
+      updated[srcStage] = srcList;
+
+      const dstList = [...updated[dstStage]];
+      dstList.splice(destination.index, 0, moved);
+      updated[dstStage] = dstList;
+
+      return updated;
+    });
+
+    if (srcStage !== dstStage) {
+      setManualCorrections((c) => c + 1);
+      addSystemMessage(`🔄 Imagen movida de "${stageLabels[srcStage]}" a "${stageLabels[dstStage]}" (corrección manual)`);
+    }
+  }, []);
+
   const classifyImages = useCallback(
-    async (newItems: { id: string; url: string; name: string; dataUrl: string }[]) => {
+    async (newItems: { id: string; url: string; name: string; dataUrl: string; exif?: any }[]) => {
       setIsClassifying(true);
       addSystemMessage(`🤖 Analizando ${newItems.length} imagen(es) con IA...`);
 
       try {
-        // Resize for API
         const resizedImages = await Promise.all(
           newItems.map(async (img) => ({
             id: img.id,
             dataUrl: await resizeImage(img.dataUrl),
+            exif: img.exif || undefined,
           }))
         );
 
@@ -96,16 +112,9 @@ const Index = () => {
 
         if (error) throw new Error(error.message || "Error al clasificar");
 
-        const classifications: { id: string; stage: Stage; reason: string }[] =
+        const classifications: { id: string; stage: Stage; scene: string; confidence: number; reason: string }[] =
           data?.classifications || [];
 
-        const stageLabels: Record<Stage, string> = {
-          before: "Antes",
-          process: "Proceso",
-          after: "Después",
-        };
-
-        // Move images to their classified stages
         setImages((prev) => {
           const updated = { ...prev };
           for (const cls of classifications) {
@@ -119,6 +128,9 @@ const Index = () => {
                   name: item.name,
                   timestamp: new Date(),
                   reason: cls.reason,
+                  scene: cls.scene,
+                  confidence: cls.confidence,
+                  exif: item.exif,
                 },
               ];
             }
@@ -126,22 +138,25 @@ const Index = () => {
           return updated;
         });
 
-        // Remove from pending
         setPendingImages((prev) =>
           prev.filter((p) => !classifications.some((c) => c.id === p.id))
         );
 
-        // Summary message
+        setTotalClassified((t) => t + classifications.length);
+
         const summary = classifications
-          .map((c) => `• ${newItems.find((i) => i.id === c.id)?.name} → ${stageLabels[c.stage]} (${c.reason})`)
+          .map((c) => {
+            const name = newItems.find((i) => i.id === c.id)?.name;
+            const conf = Math.round(c.confidence * 100);
+            const scene = sceneLabels[c.scene] || c.scene;
+            return `• ${name} → ${stageLabels[c.stage]} | ${scene} (${conf}%) — ${c.reason}`;
+          })
           .join("\n");
         addSystemMessage(`✅ Clasificación completada:\n${summary}`);
       } catch (err: any) {
         console.error("Classification error:", err);
         toast.error("Error al clasificar imágenes");
         addSystemMessage(`❌ Error: ${err.message}`);
-
-        // On error, keep in pending so user can retry or manually sort
       } finally {
         setIsClassifying(false);
       }
@@ -151,26 +166,31 @@ const Index = () => {
 
   const handleUploadAndClassify = useCallback(
     async (files: FileList) => {
-      const validFiles = Array.from(files).filter((f) =>
-        f.type.startsWith("image/")
-      );
+      const validFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
       if (validFiles.length === 0) return;
 
-      // Create items with blob URLs for display and dataURLs for AI
       const items = await Promise.all(
-        validFiles.map(async (f) => ({
-          id: crypto.randomUUID(),
-          url: URL.createObjectURL(f),
-          name: f.name,
-          dataUrl: await fileToDataUrl(f),
-          timestamp: new Date(),
-        }))
+        validFiles.map(async (f) => {
+          const [dataUrl, exif] = await Promise.all([fileToDataUrl(f), extractExif(f)]);
+          return {
+            id: crypto.randomUUID(),
+            url: URL.createObjectURL(f),
+            name: f.name,
+            dataUrl,
+            exif,
+            timestamp: new Date(),
+          };
+        })
       );
 
       setPendingImages((prev) => [...prev, ...items]);
-      addSystemMessage(`📷 ${items.length} imagen(es) subida(s). Clasificando...`);
 
-      // Classify
+      const exifCount = items.filter((i) => i.exif).length;
+      let msg = `📷 ${items.length} imagen(es) subida(s).`;
+      if (exifCount > 0) msg += ` 📋 Metadatos EXIF extraídos de ${exifCount} foto(s).`;
+      msg += " Clasificando...";
+      addSystemMessage(msg);
+
       await classifyImages(items);
     },
     [classifyImages]
@@ -193,11 +213,6 @@ const Index = () => {
       [stage]: [...prev[stage], ...newImages],
     }));
 
-    const stageLabels: Record<Stage, string> = {
-      before: "Antes",
-      process: "Proceso",
-      after: "Después",
-    };
     addSystemMessage(
       `📷 ${newImages.length} imagen(es) añadida(s) manualmente a "${stageLabels[stage]}"`
     );
@@ -217,15 +232,10 @@ const Index = () => {
     ]);
   };
 
-  const totalImages =
-    images.before.length + images.process.length + images.after.length;
+  const totalImages = images.before.length + images.process.length + images.after.length;
+  const correctionRate = totalClassified > 0 ? Math.round((manualCorrections / totalClassified) * 100) : 0;
 
-  const stages: {
-    key: Stage;
-    title: string;
-    colorClass: string;
-    dotColor: string;
-  }[] = [
+  const stages: { key: Stage; title: string; colorClass: string; dotColor: string }[] = [
     { key: "before", title: "Antes", colorClass: "bg-stage-before", dotColor: "bg-stage-before" },
     { key: "process", title: "Proceso", colorClass: "bg-stage-process", dotColor: "bg-stage-process" },
     { key: "after", title: "Después", colorClass: "bg-stage-after", dotColor: "bg-stage-after" },
@@ -243,7 +253,7 @@ const Index = () => {
             Organizador de Imágenes con IA
           </h1>
           <p className="text-xs text-muted-foreground">
-            Sube imágenes y la IA las clasifica automáticamente
+            Clasificación automática · Arrastra para corregir
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -256,6 +266,13 @@ const Index = () => {
           <span className="px-2.5 py-1 rounded-full bg-muted text-xs font-medium text-muted-foreground">
             {totalImages} clasificadas
           </span>
+          {totalClassified > 0 && (
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+              correctionRate <= 10 ? "bg-stage-after/10 text-stage-after" : "bg-accent/10 text-accent"
+            }`}>
+              {correctionRate}% correcciones
+            </span>
+          )}
           {pendingImages.length > 0 && (
             <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">
               {pendingImages.length} pendientes
@@ -264,21 +281,24 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Columns */}
-      <main className="flex-1 flex gap-4 p-4 overflow-hidden">
-        {stages.map((stage) => (
-          <ImageStageColumn
-            key={stage.key}
-            title={stage.title}
-            colorClass={stage.colorClass}
-            dotColor={stage.dotColor}
-            images={images[stage.key]}
-            onAddImages={(files) => handleManualAdd(stage.key, files)}
-            onRemoveImage={(id) => removeImage(stage.key, id)}
-            onPreview={setPreviewUrl}
-          />
-        ))}
-      </main>
+      {/* Columns with DnD */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <main className="flex-1 flex gap-4 p-4 overflow-hidden">
+          {stages.map((stage) => (
+            <ImageStageColumn
+              key={stage.key}
+              stageKey={stage.key}
+              title={stage.title}
+              colorClass={stage.colorClass}
+              dotColor={stage.dotColor}
+              images={images[stage.key]}
+              onAddImages={(files) => handleManualAdd(stage.key, files)}
+              onRemoveImage={(id) => removeImage(stage.key, id)}
+              onPreview={setPreviewUrl}
+            />
+          ))}
+        </main>
+      </DragDropContext>
 
       {/* Chat / Upload */}
       <ChatInput

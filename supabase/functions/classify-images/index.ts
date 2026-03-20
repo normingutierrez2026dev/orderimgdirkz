@@ -13,7 +13,6 @@ serve(async (req) => {
 
   try {
     const { images } = await req.json();
-    // images: array of { id, dataUrl }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -27,35 +26,48 @@ serve(async (req) => {
       );
     }
 
-    // Build content array with all images for a single classification call
+    const hasExif = images.some((img: any) => img.exif);
+
     const content: any[] = [
       {
         type: "text",
-        text: `You are an image classification AI. You analyze images that represent stages of a process or transformation.
+        text: `You are an expert construction and renovation image classifier. You analyze photos from construction, painting, remodeling, and renovation projects.
 
-For each image, classify it into one of three categories:
-- "before": The initial state, the starting point, the original condition before any work/change
-- "process": Work in progress, mid-transformation, during the change, construction/repair happening  
-- "after": The final result, completed work, the end state after transformation
+For each image, classify it into:
+1. **Stage** - one of three categories:
+   - "before": Damaged surfaces, old paint, empty/deteriorated areas, untouched spaces, debris, worn materials
+   - "process": Tools visible, scaffolding, paint cans, workers present, construction materials, partial work done, protective covers, tape, equipment
+   - "after": Clean finished surfaces, installed furniture/fixtures, fresh paint, polished floors, no tools or materials visible, completed work
 
-Analyze visual cues like:
-- Condition/quality of subjects (worn vs new, messy vs clean, raw vs finished)
-- Presence of tools, equipment, workers, scaffolding → process
-- Pristine, polished, completed appearance → after
-- Deteriorated, original, untouched state → before
+2. **Scene type** - one of:
+   - "interior_walls": Interior walls, murals, accent walls
+   - "interior_ceiling": Ceilings, crown molding
+   - "interior_floor": Flooring, laminate, tile, carpet
+   - "exterior_roof": Roofing, shingles, gutters
+   - "exterior_facade": Building facades, siding, exterior walls
+   - "exterior_pavement": Driveways, walkways, patios
+   - "other": Anything that doesn't fit above
 
-Respond with a JSON array where each object has "id" (the image id I provide) and "stage" (one of "before", "process", "after").
-Example: [{"id":"img1","stage":"before"},{"id":"img2","stage":"after"}]
+3. **Confidence** - your confidence level from 0.0 to 1.0
+
+Use visual cues:
+- Deterioration, stains, cracks, peeling → before
+- Tools, ladders, drop cloths, tape, partially painted → process  
+- Clean lines, uniform color, installed hardware, staged furniture → after
+
+${hasExif ? "EXIF metadata is provided for chronological ordering. Earlier dates suggest 'before', latest dates suggest 'after'." : ""}
 
 Here are the images to classify:`
       }
     ];
 
     for (const img of images) {
-      content.push({
-        type: "text",
-        text: `Image ID: ${img.id}`
-      });
+      let metadata = `Image ID: ${img.id}`;
+      if (img.exif) {
+        if (img.exif.date) metadata += ` | Date: ${img.exif.date}`;
+        if (img.exif.gps) metadata += ` | GPS: ${img.exif.gps}`;
+      }
+      content.push({ type: "text", text: metadata });
       content.push({
         type: "image_url",
         image_url: { url: img.dataUrl }
@@ -76,7 +88,7 @@ Here are the images to classify:`
             type: "function",
             function: {
               name: "classify_images",
-              description: "Classify images into before/process/after stages",
+              description: "Classify construction/renovation images into stages and scene types",
               parameters: {
                 type: "object",
                 properties: {
@@ -87,9 +99,11 @@ Here are the images to classify:`
                       properties: {
                         id: { type: "string" },
                         stage: { type: "string", enum: ["before", "process", "after"] },
+                        scene: { type: "string", enum: ["interior_walls", "interior_ceiling", "interior_floor", "exterior_roof", "exterior_facade", "exterior_pavement", "other"] },
+                        confidence: { type: "number", description: "Confidence 0.0-1.0" },
                         reason: { type: "string", description: "Brief reason for classification in Spanish" }
                       },
-                      required: ["id", "stage", "reason"],
+                      required: ["id", "stage", "scene", "confidence", "reason"],
                       additionalProperties: false
                     }
                   }
@@ -122,7 +136,6 @@ Here are the images to classify:`
 
     const data = await response.json();
     
-    // Extract tool call result
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall) {
       const result = JSON.parse(toolCall.function.arguments);
@@ -131,7 +144,6 @@ Here are the images to classify:`
       });
     }
 
-    // Fallback: try parsing content as JSON
     const content_text = data.choices?.[0]?.message?.content || "";
     const jsonMatch = content_text.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
