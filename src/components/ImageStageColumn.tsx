@@ -7,7 +7,6 @@ import { sceneLabels } from "@/lib/types";
 interface ImageStageColumnProps {
   stageKey: string;
   title: string;
-  colorClass: string;
   dotColor: string;
   images: ImageItem[];
   
