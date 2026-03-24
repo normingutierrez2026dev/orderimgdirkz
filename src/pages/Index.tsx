@@ -101,6 +101,7 @@ const Index = () => {
         const resizedImages = await Promise.all(
           newItems.map(async (img) => ({
             id: img.id,
+            name: img.name,
             dataUrl: await resizeImage(img.dataUrl),
             exif: img.exif || undefined,
           }))
