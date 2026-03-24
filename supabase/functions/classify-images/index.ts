@@ -63,6 +63,7 @@ Here are the images to classify:`
 
     for (const img of images) {
       let metadata = `Image ID: ${img.id}`;
+      if (img.name) metadata += ` | Filename: ${img.name}`;
       if (img.exif) {
         if (img.exif.date) metadata += ` | Date: ${img.exif.date}`;
         if (img.exif.gps) metadata += ` | GPS: ${img.exif.gps}`;
