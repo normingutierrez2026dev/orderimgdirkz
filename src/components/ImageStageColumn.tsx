@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Upload, X, ImageIcon, ZoomIn, MapPin, Calendar, Eye } from "lucide-react";
+import { useState } from "react";
+import { X, ImageIcon, ZoomIn, MapPin, Calendar, Eye } from "lucide-react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import type { ImageItem } from "@/lib/types";
 import { sceneLabels } from "@/lib/types";
