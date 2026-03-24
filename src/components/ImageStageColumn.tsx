@@ -15,6 +15,7 @@ interface ImageStageColumnProps {
 
 const ImageStageColumn = ({
   stageKey,
+  title,
   dotColor,
   images,
   onRemoveImage,

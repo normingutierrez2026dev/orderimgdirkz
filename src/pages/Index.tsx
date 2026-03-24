@@ -309,7 +309,6 @@ const Index = () => {
               key={stage.key}
               stageKey={stage.key}
               title={stage.title}
-              colorClass={stage.colorClass}
               dotColor={stage.dotColor}
               images={images[stage.key]}
               onRemoveImage={(id) => removeImage(stage.key, id)}
