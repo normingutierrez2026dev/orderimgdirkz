@@ -63,20 +63,17 @@ const ImageStageColumn = ({
             style={{ minHeight: "200px" }}
           >
             {images.length === 0 ? (
-              <button
-                onClick={() => inputRef.current?.click()}
-                className="flex flex-col items-center justify-center w-full h-full min-h-[180px] gap-3 text-muted-foreground hover:text-foreground/60 transition-colors active:scale-[0.98]"
-              >
+              <div className="flex flex-col items-center justify-center w-full h-full min-h-[180px] gap-3 text-muted-foreground">
                 <div className="p-3 rounded-xl bg-muted">
                   <ImageIcon className="w-6 h-6" />
                 </div>
                 <span className="text-sm font-medium">
-                  Arrastra imágenes aquí
+                  Sin imágenes
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  o haz clic para seleccionar
+                  Usa "Subir y Clasificar" o arrastra desde otra columna
                 </span>
-              </button>
+              </div>
             ) : (
               <>
                 {images.map((img, i) => (
