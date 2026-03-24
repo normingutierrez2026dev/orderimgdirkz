@@ -57,12 +57,19 @@ Use visual cues:
 
 ${hasExif ? "EXIF metadata is provided for chronological ordering. Earlier dates suggest 'before', latest dates suggest 'after'." : ""}
 
+IMPORTANT - Filename hints: The filename may contain keywords indicating the stage in ANY language. Examples:
+- before/antes/avant/vorher/prima → "before"
+- process/proceso/durant/während/durante → "process"  
+- after/después/despues/après/nachher/dopo → "after"
+If the filename clearly indicates a stage, use that as a strong hint (but still verify with the image content).
+
 Here are the images to classify:`
       }
     ];
 
     for (const img of images) {
       let metadata = `Image ID: ${img.id}`;
+      if (img.name) metadata += ` | Filename: ${img.name}`;
       if (img.exif) {
         if (img.exif.date) metadata += ` | Date: ${img.exif.date}`;
         if (img.exif.gps) metadata += ` | GPS: ${img.exif.gps}`;

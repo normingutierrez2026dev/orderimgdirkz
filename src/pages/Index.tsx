@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, Trash2 } from "lucide-react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { supabase } from "@/integrations/supabase/client";
 import ImageStageColumn from "@/components/ImageStageColumn";
@@ -101,6 +101,7 @@ const Index = () => {
         const resizedImages = await Promise.all(
           newItems.map(async (img) => ({
             id: img.id,
+            name: img.name,
             dataUrl: await resizeImage(img.dataUrl),
             exif: img.exif || undefined,
           }))
@@ -297,6 +298,26 @@ const Index = () => {
             <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">
               {pendingImages.length} pendientes
             </span>
+          )}
+          {(totalImages > 0 || messages.length > 1) && (
+            <button
+              onClick={() => {
+                setImages({ before: [], process: [], after: [] });
+                setPendingImages([]);
+                setManualCorrections(0);
+                setTotalClassified(0);
+                setMessages([{
+                  id: "welcome",
+                  text: "¡Bienvenido! Sube imágenes y la IA las clasificará automáticamente en Antes, Proceso y Después. Puedes arrastrar imágenes entre columnas si la IA se equivoca.",
+                  timestamp: new Date(),
+                  type: "system",
+                }]);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Limpiar todo
+            </button>
           )}
         </div>
       </header>
