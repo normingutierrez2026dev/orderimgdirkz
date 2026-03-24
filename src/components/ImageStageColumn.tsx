@@ -57,12 +57,9 @@ const ImageStageColumn = ({
                 ? `border-stage-${stageKey} bg-stage-${stageKey}/5`
                 : "border-border bg-card/60"
             }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
+            onDrop={(e) => { e.preventDefault(); setIsDragging(false); }}
             style={{ minHeight: "200px" }}
           >
             {images.length === 0 ? (
