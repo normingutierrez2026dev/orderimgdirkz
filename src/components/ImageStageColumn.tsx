@@ -167,23 +167,6 @@ const ImageStageColumn = ({
         )}
       </Droppable>
 
-      {/* Upload button */}
-      <button
-        onClick={() => inputRef.current?.click()}
-        className={`mt-3 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all active:scale-[0.97] ${colorClass} text-primary-foreground shadow-sm hover:shadow-md`}
-      >
-        <Upload className="w-4 h-4" />
-        Subir imágenes
-      </button>
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => e.target.files && onAddImages(e.target.files)}
-      />
     </div>
   );
 };
