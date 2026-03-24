@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Upload, X, ImageIcon, ZoomIn, MapPin, Calendar, Eye } from "lucide-react";
+import { useState } from "react";
+import { X, ImageIcon, ZoomIn, MapPin, Calendar, Eye } from "lucide-react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import type { ImageItem } from "@/lib/types";
 import { sceneLabels } from "@/lib/types";
@@ -7,10 +7,8 @@ import { sceneLabels } from "@/lib/types";
 interface ImageStageColumnProps {
   stageKey: string;
   title: string;
-  colorClass: string;
   dotColor: string;
   images: ImageItem[];
-  onAddImages: (files: FileList) => void;
   onRemoveImage: (id: string) => void;
   onPreview: (url: string) => void;
 }
@@ -18,21 +16,12 @@ interface ImageStageColumnProps {
 const ImageStageColumn = ({
   stageKey,
   title,
-  colorClass,
   dotColor,
   images,
-  onAddImages,
   onRemoveImage,
   onPreview,
 }: ImageStageColumnProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files.length) onAddImages(e.dataTransfer.files);
-  };
 
   return (
     <div className="flex flex-col flex-1 min-w-0">
@@ -58,29 +47,23 @@ const ImageStageColumn = ({
                 ? `border-stage-${stageKey} bg-stage-${stageKey}/5`
                 : "border-border bg-card/60"
             }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
+            onDrop={(e) => { e.preventDefault(); setIsDragging(false); }}
             style={{ minHeight: "200px" }}
           >
             {images.length === 0 ? (
-              <button
-                onClick={() => inputRef.current?.click()}
-                className="flex flex-col items-center justify-center w-full h-full min-h-[180px] gap-3 text-muted-foreground hover:text-foreground/60 transition-colors active:scale-[0.98]"
-              >
+              <div className="flex flex-col items-center justify-center w-full h-full min-h-[180px] gap-3 text-muted-foreground">
                 <div className="p-3 rounded-xl bg-muted">
                   <ImageIcon className="w-6 h-6" />
                 </div>
                 <span className="text-sm font-medium">
-                  Arrastra imágenes aquí
+                  Sin imágenes
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  o haz clic para seleccionar
+                  Usa "Subir y Clasificar" o arrastra desde otra columna
                 </span>
-              </button>
+              </div>
             ) : (
               <>
                 {images.map((img, i) => (
@@ -167,23 +150,6 @@ const ImageStageColumn = ({
         )}
       </Droppable>
 
-      {/* Upload button */}
-      <button
-        onClick={() => inputRef.current?.click()}
-        className={`mt-3 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all active:scale-[0.97] ${colorClass} text-primary-foreground shadow-sm hover:shadow-md`}
-      >
-        <Upload className="w-4 h-4" />
-        Subir imágenes
-      </button>
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => e.target.files && onAddImages(e.target.files)}
-      />
     </div>
   );
 };

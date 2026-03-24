@@ -196,28 +196,6 @@ const Index = () => {
     [classifyImages]
   );
 
-  const handleManualAdd = useCallback((stage: Stage, files: FileList) => {
-    const newImages: ImageItem[] = Array.from(files)
-      .filter((f) => f.type.startsWith("image/"))
-      .map((f) => ({
-        id: crypto.randomUUID(),
-        url: URL.createObjectURL(f),
-        name: f.name,
-        timestamp: new Date(),
-      }));
-
-    if (newImages.length === 0) return;
-
-    setImages((prev) => ({
-      ...prev,
-      [stage]: [...prev[stage], ...newImages],
-    }));
-
-    addSystemMessage(
-      `📷 ${newImages.length} imagen(es) añadida(s) manualmente a "${stageLabels[stage]}"`
-    );
-  }, []);
-
   const removeImage = useCallback((stage: Stage, id: string) => {
     setImages((prev) => ({
       ...prev,
@@ -331,10 +309,8 @@ const Index = () => {
               key={stage.key}
               stageKey={stage.key}
               title={stage.title}
-              colorClass={stage.colorClass}
               dotColor={stage.dotColor}
               images={images[stage.key]}
-              onAddImages={(files) => handleManualAdd(stage.key, files)}
               onRemoveImage={(id) => removeImage(stage.key, id)}
               onPreview={setPreviewUrl}
             />
