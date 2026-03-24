@@ -334,7 +334,6 @@ const Index = () => {
               colorClass={stage.colorClass}
               dotColor={stage.dotColor}
               images={images[stage.key]}
-              onAddImages={(files) => handleManualAdd(stage.key, files)}
               onRemoveImage={(id) => removeImage(stage.key, id)}
               onPreview={setPreviewUrl}
             />

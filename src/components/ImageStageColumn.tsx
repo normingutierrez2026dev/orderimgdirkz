@@ -24,14 +24,7 @@ const ImageStageColumn = ({
   onRemoveImage,
   onPreview,
 }: ImageStageColumnProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files.length) onAddImages(e.dataTransfer.files);
-  };
 
   return (
     <div className="flex flex-col flex-1 min-w-0">
