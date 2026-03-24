@@ -225,12 +225,54 @@ const Index = () => {
     }));
   }, []);
 
-  const handleSendMessage = (text: string) => {
+  const [isReplying, setIsReplying] = useState(false);
+
+  const buildImageContext = useCallback(() => {
+    const lines: string[] = [];
+    for (const stage of ["before", "process", "after"] as Stage[]) {
+      const imgs = images[stage];
+      if (imgs.length > 0) {
+        lines.push(`**${stageLabels[stage]}** (${imgs.length} imágenes):`);
+        imgs.forEach((img) => {
+          let info = `- ${img.name}`;
+          if (img.scene) info += ` | Escena: ${sceneLabels[img.scene] || img.scene}`;
+          if (img.confidence) info += ` | Confianza: ${Math.round(img.confidence * 100)}%`;
+          if (img.reason) info += ` | Razón: ${img.reason}`;
+          if (img.exif?.date) info += ` | Fecha: ${img.exif.date}`;
+          if (img.exif?.gps) info += ` | GPS: ${img.exif.gps}`;
+          lines.push(info);
+        });
+      }
+    }
+    if (totalClassified > 0) {
+      lines.push(`\nEstadísticas: ${totalImages} clasificadas, ${correctionRate}% correcciones manuales.`);
+    }
+    return lines.length > 0 ? lines.join("\n") : "No hay imágenes clasificadas aún.";
+  }, [images, totalClassified, totalImages, correctionRate]);
+
+  const handleSendMessage = useCallback(async (text: string) => {
     setMessages((prev) => [
       ...prev,
       { id: crypto.randomUUID(), text, timestamp: new Date(), type: "user" },
     ]);
-  };
+    setIsReplying(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("chat", {
+        body: { message: text, imageContext: buildImageContext() },
+      });
+
+      if (error) throw new Error(error.message || "Error al consultar IA");
+
+      const reply = data?.reply || "No pude generar una respuesta.";
+      addSystemMessage(`🤖 ${reply}`);
+    } catch (err: any) {
+      console.error("Chat error:", err);
+      addSystemMessage(`❌ Error: ${err.message}`);
+    } finally {
+      setIsReplying(false);
+    }
+  }, [buildImageContext]);
 
   const totalImages = images.before.length + images.process.length + images.after.length;
   const correctionRate = totalClassified > 0 ? Math.round((manualCorrections / totalClassified) * 100) : 0;
