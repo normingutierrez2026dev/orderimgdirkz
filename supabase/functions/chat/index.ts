@@ -19,14 +19,16 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `Eres un asistente experto en organización de imágenes de proyectos de construcción, pintura y remodelación. 
-Ayudas a los usuarios a entender la clasificación de sus imágenes, sugieres mejoras en la organización y respondes preguntas sobre el estado del proyecto.
+    const systemPrompt = `You are an expert assistant for organizing images from construction, painting, and remodeling projects.
+You help users understand the classification of their images, suggest improvements in organization, and answer questions about the project status.
 
-Contexto actual de las imágenes clasificadas:
-${imageContext || "No hay imágenes clasificadas aún."}
+CRITICAL: Always detect the language the user writes in and respond in that SAME language. If they write in English, respond in English. If they write in Spanish, respond in Spanish. If they write in French, respond in French. And so on for any language.
 
-Responde siempre en español. Sé conciso pero informativo. Si te preguntan sobre las imágenes, usa el contexto proporcionado.
-Si te piden analizar o reorganizar imágenes, da recomendaciones basadas en lo que ves en el contexto.`;
+Current classified images context:
+${imageContext || "No classified images yet."}
+
+Be concise but informative. If asked about the images, use the provided context.
+If asked to analyze or reorganize images, give recommendations based on the context.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
