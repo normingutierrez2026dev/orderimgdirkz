@@ -348,6 +348,7 @@ const Index = () => {
         onSendMessage={handleSendMessage}
         onUploadAndClassify={handleUploadAndClassify}
         isClassifying={isClassifying}
+        isReplying={isReplying}
       />
 
       {/* Modal */}

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles, Upload, Loader2 } from "lucide-react";
 
 interface ChatMessage {
@@ -13,14 +13,22 @@ interface ChatInputProps {
   onSendMessage: (text: string) => void;
   onUploadAndClassify: (files: FileList) => void;
   isClassifying: boolean;
+  isReplying?: boolean;
 }
 
-const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying }: ChatInputProps) => {
+const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying, isReplying }: ChatInputProps) => {
   const [input, setInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isReplying) return;
     onSendMessage(input.trim());
     setInput("");
   };
@@ -28,7 +36,7 @@ const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying
   return (
     <div className="border-t border-border bg-card/80 backdrop-blur-sm">
       {/* Message history */}
-      <div className="max-h-40 overflow-y-auto scroll-hidden px-4 py-2 space-y-1.5">
+      <div ref={scrollRef} className="max-h-48 overflow-y-auto scroll-hidden px-4 py-2 space-y-1.5">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -41,11 +49,16 @@ const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying
             {msg.text}
           </div>
         ))}
+        {isReplying && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-2">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Pensando...
+          </div>
+        )}
       </div>
 
       {/* Input area */}
       <div className="flex items-center gap-2 px-4 py-3">
-        {/* Main upload button */}
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isClassifying}
@@ -59,7 +72,7 @@ const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
-              Subir y Clasificar con IA
+              Subir y Clasificar
             </>
           )}
         </button>
@@ -83,12 +96,13 @@ const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Escribe una nota..."
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            placeholder="Pregunta sobre tus imágenes..."
+            disabled={isReplying}
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isReplying}
             className="p-1.5 rounded-md text-primary hover:bg-primary/10 disabled:opacity-30 active:scale-95 transition-all"
           >
             <Send className="w-4 h-4" />
