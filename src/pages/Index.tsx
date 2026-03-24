@@ -227,6 +227,9 @@ const Index = () => {
 
   const [isReplying, setIsReplying] = useState(false);
 
+  const totalImages = images.before.length + images.process.length + images.after.length;
+  const correctionRate = totalClassified > 0 ? Math.round((manualCorrections / totalClassified) * 100) : 0;
+
   const buildImageContext = useCallback(() => {
     const lines: string[] = [];
     for (const stage of ["before", "process", "after"] as Stage[]) {
@@ -273,9 +276,6 @@ const Index = () => {
       setIsReplying(false);
     }
   }, [buildImageContext]);
-
-  const totalImages = images.before.length + images.process.length + images.after.length;
-  const correctionRate = totalClassified > 0 ? Math.round((manualCorrections / totalClassified) * 100) : 0;
 
   const stages: { key: Stage; title: string; colorClass: string; dotColor: string }[] = [
     { key: "before", title: "Antes", colorClass: "bg-stage-before", dotColor: "bg-stage-before" },
