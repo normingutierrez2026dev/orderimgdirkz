@@ -21,7 +21,6 @@ const ImageStageColumn = ({
   colorClass,
   dotColor,
   images,
-  onAddImages,
   onRemoveImage,
   onPreview,
 }: ImageStageColumnProps) => {
