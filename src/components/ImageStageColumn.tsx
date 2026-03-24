@@ -9,7 +9,6 @@ interface ImageStageColumnProps {
   title: string;
   dotColor: string;
   images: ImageItem[];
-  
   onRemoveImage: (id: string) => void;
   onPreview: (url: string) => void;
 }
