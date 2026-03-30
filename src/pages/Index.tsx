@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
-import { Camera, Loader2, Trash2 } from "lucide-react";
+import { Camera, Download, Loader2, Trash2 } from "lucide-react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { supabase } from "@/integrations/supabase/client";
 import ImageStageColumn from "@/components/ImageStageColumn";
