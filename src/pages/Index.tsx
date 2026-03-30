@@ -301,6 +301,15 @@ const Index = () => {
               {pendingImages.length} pendientes
             </span>
           )}
+          {totalImages > 0 && (
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Descargar
+            </button>
+          )}
           {(totalImages > 0 || messages.length > 1) && (
             <button
               onClick={() => {
