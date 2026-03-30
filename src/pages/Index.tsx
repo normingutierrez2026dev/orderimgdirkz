@@ -211,6 +211,33 @@ const Index = () => {
   const totalImages = images.before.length + images.process.length + images.after.length;
   const correctionRate = totalClassified > 0 ? Math.round((manualCorrections / totalClassified) * 100) : 0;
 
+  const handleDownload = useCallback(async () => {
+    if (totalImages === 0) {
+      toast.error("No hay imágenes para descargar");
+      return;
+    }
+    const zip = new JSZip();
+    const stageOrder: Stage[] = ["before", "process", "after"];
+    const folderNames: Record<Stage, string> = { before: "01_Antes", process: "02_Proceso", after: "03_Despues" };
+    let globalIndex = 1;
+
+    for (const stage of stageOrder) {
+      const folder = zip.folder(folderNames[stage])!;
+      for (const img of images[stage]) {
+        const ext = img.name.split(".").pop() || "jpg";
+        const fileName = `${String(globalIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
+        const response = await fetch(img.url);
+        const blob = await response.blob();
+        folder.file(fileName, blob);
+        globalIndex++;
+      }
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    saveAs(content, `imagenes_clasificadas_${new Date().toISOString().slice(0, 10)}.zip`);
+    addSystemMessage(`📦 Descarga generada con ${totalImages} imágenes organizadas.`);
+  }, [images, totalImages]);
+
   const buildImageContext = useCallback(() => {
     const lines: string[] = [];
     for (const stage of ["before", "process", "after"] as Stage[]) {
