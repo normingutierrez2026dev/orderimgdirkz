@@ -114,9 +114,10 @@ Here are the images to classify:`
                         stage: { type: "string", enum: ["before", "process", "after"] },
                         scene: { type: "string", enum: ["interior_walls", "interior_ceiling", "interior_floor", "exterior_roof", "exterior_facade", "exterior_pavement", "other"] },
                         confidence: { type: "number", description: "Confidence 0.0-1.0" },
+                        progress: { type: "integer", description: "Estimated work completion 1-100. 1-60=before, 61-90=process, 91-100=after.", minimum: 1, maximum: 100 },
                         reason: { type: "string", description: "Brief reason for classification in Spanish" }
                       },
-                      required: ["id", "stage", "scene", "confidence", "reason"],
+                      required: ["id", "stage", "scene", "confidence", "progress", "reason"],
                       additionalProperties: false
                     }
                   }
