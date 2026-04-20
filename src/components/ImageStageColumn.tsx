@@ -133,6 +133,13 @@ const ImageStageColumn = ({
                           </div>
                         </div>
 
+                        {/* Progress badge (top-left) */}
+                        {img.progress !== undefined && (
+                          <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-foreground/70 text-background text-[10px] font-semibold">
+                            {img.progress}%
+                          </div>
+                        )}
+
                         {/* Confidence badge */}
                         {img.confidence !== undefined && img.confidence < 0.7 && (
                           <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-accent/90 text-white text-[10px] font-medium">
