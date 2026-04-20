@@ -8,6 +8,7 @@ export interface ImageItem {
   reason?: string;
   scene?: string;
   confidence?: number;
+  progress?: number;
   exif?: ExifData | null;
 }
 
