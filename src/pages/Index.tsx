@@ -42,6 +42,7 @@ const resizeImage = (dataUrl: string, maxSize = 800): Promise<string> =>
   });
 
 const Index = () => {
+  const { theme, toggleTheme } = useTheme();
   const [images, setImages] = useState<Record<Stage, ImageItem[]>>({
     before: [],
     process: [],
