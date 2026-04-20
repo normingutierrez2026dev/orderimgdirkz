@@ -255,7 +255,7 @@ const Index = () => {
     }
 
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, `imagenes_clasificadas_${new Date().toISOString().slice(0, 10)}.zip`);
+    saveAs(content, `proyecto_order.zip`);
     addSystemMessage(`📦 Descarga generada con ${totalImages} imágenes organizadas.`);
   }, [images, totalImages]);
 
