@@ -50,10 +50,16 @@ For each image, classify it into:
 
 3. **Confidence** - your confidence level from 0.0 to 1.0
 
+4. **Progress** - estimated overall completion percentage of the work shown, integer 1-100:
+   - 1-60: work not started or just beginning (BEFORE)
+   - 61-90: work in progress, partially done (PROCESS)
+   - 91-100: work essentially complete (AFTER)
+   The "stage" field MUST be consistent with the progress range.
+
 Use visual cues:
-- Deterioration, stains, cracks, peeling → before
-- Tools, ladders, drop cloths, tape, partially painted → process  
-- Clean lines, uniform color, installed hardware, staged furniture → after
+- Deterioration, stains, cracks, peeling, raw/empty space → low progress (before)
+- Tools, ladders, drop cloths, tape, partially painted/installed → mid progress (process)
+- Clean lines, uniform color, installed hardware, staged furniture, no tools → high progress (after)
 
 ${hasExif ? "EXIF metadata is provided for chronological ordering. Earlier dates suggest 'before', latest dates suggest 'after'." : ""}
 
