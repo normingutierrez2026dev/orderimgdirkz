@@ -6,39 +6,40 @@
 
 @layer base {
   :root {
-    --background: 40 20% 97%;
-    --foreground: 220 20% 14%;
+    /* Dark theme: black base with gray-800 surfaces */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
 
-    --card: 40 25% 99%;
-    --card-foreground: 220 20% 14%;
+    --card: 215 14% 17%; /* ~ tailwind gray-800 */
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 14%;
+    --popover: 215 14% 17%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 152 44% 34%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 152 50% 45%;
+    --primary-foreground: 0 0% 5%;
 
-    --secondary: 38 50% 94%;
-    --secondary-foreground: 220 20% 14%;
+    --secondary: 215 14% 22%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 40 18% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 215 14% 20%;
+    --muted-foreground: 215 10% 65%;
 
-    --accent: 28 80% 56%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 28 85% 60%;
+    --accent-foreground: 0 0% 5%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 16% 88%;
-    --input: 40 16% 88%;
-    --ring: 152 44% 34%;
+    --border: 215 14% 25%;
+    --input: 215 14% 22%;
+    --ring: 152 50% 45%;
 
     --radius: 0.75rem;
 
-    --stage-before: 28 80% 56%;
-    --stage-process: 210 60% 50%;
-    --stage-after: 152 44% 34%;
+    --stage-before: 28 85% 60%;
+    --stage-process: 210 70% 60%;
+    --stage-after: 152 50% 50%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
