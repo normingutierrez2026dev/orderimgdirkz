@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
-import { Camera, Download, Loader2, Trash2, Moon, Sun } from "lucide-react";
+import { Download, Loader2, Trash2, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import royalLogo from "@/assets/royal-logo.png";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
@@ -319,12 +320,16 @@ const Index = () => {
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Header */}
       <header className="flex items-center gap-3 px-6 py-4 border-b border-border bg-card/80 backdrop-blur-sm">
-        <div className="p-2 rounded-xl bg-primary text-primary-foreground">
-          <Camera className="w-5 h-5" />
-        </div>
+        <img
+          src={royalLogo}
+          alt="Royal Img Order logo"
+          width={40}
+          height={40}
+          className="w-10 h-10 object-contain"
+        />
         <div>
           <h1 className="text-lg font-bold leading-tight text-foreground">
-            Organizador de Imágenes con IA
+            Royal Img Order
           </h1>
           <p className="text-xs text-muted-foreground">
             Clasificación automática · Arrastra para corregir
