@@ -238,19 +238,22 @@ const Index = () => {
       return;
     }
     const zip = new JSZip();
+    const root = zip.folder("proyecto_order")!;
     const stageOrder: Stage[] = ["before", "process", "after"];
     const folderNames: Record<Stage, string> = { before: "01_Antes", process: "02_Proceso", after: "03_Despues" };
     let globalIndex = 1;
 
     for (const stage of stageOrder) {
-      const folder = zip.folder(folderNames[stage])!;
+      const folder = root.folder(folderNames[stage])!;
+      let localIndex = 1;
       for (const img of images[stage]) {
-        const ext = img.name.split(".").pop() || "jpg";
-        const fileName = `${String(globalIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
+        const ext = (img.name.split(".").pop() || "jpg").toLowerCase();
+        const fileName = `${String(globalIndex).padStart(3, "0")}_${String(localIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
         const response = await fetch(img.url);
         const blob = await response.blob();
         folder.file(fileName, blob);
         globalIndex++;
+        localIndex++;
       }
     }
 
