@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { Camera, Download, Loader2, Trash2 } from "lucide-react";
+import { Camera, Download, Loader2, Trash2, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
