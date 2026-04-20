@@ -117,16 +117,29 @@ const Index = () => {
 
         if (error) throw new Error(error.message || "Error al clasificar");
 
-        const classifications: { id: string; stage: Stage; scene: string; confidence: number; reason: string }[] =
+        const classifications: { id: string; stage: Stage; scene: string; confidence: number; progress: number; reason: string }[] =
           data?.classifications || [];
+
+        // Derive stage from progress threshold (1-60 before, 61-90 process, 91-100 after)
+        const stageFromProgress = (p: number): Stage => (p <= 60 ? "before" : p <= 90 ? "process" : "after");
+
+        const exifTime = (item: any): number => {
+          const d = item?.exif?.date;
+          if (!d) return Number.POSITIVE_INFINITY;
+          // EXIF date format: "YYYY:MM:DD HH:MM:SS"
+          const iso = d.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+          const t = Date.parse(iso);
+          return isNaN(t) ? Number.POSITIVE_INFINITY : t;
+        };
 
         setImages((prev) => {
           const updated = { ...prev };
           for (const cls of classifications) {
             const item = newItems.find((i) => i.id === cls.id);
             if (item) {
-              updated[cls.stage] = [
-                ...updated[cls.stage],
+              const finalStage = stageFromProgress(cls.progress ?? 50);
+              updated[finalStage] = [
+                ...updated[finalStage],
                 {
                   id: item.id,
                   url: item.url,
@@ -135,11 +148,16 @@ const Index = () => {
                   reason: cls.reason,
                   scene: cls.scene,
                   confidence: cls.confidence,
+                  progress: cls.progress,
                   exif: item.exif,
                 },
               ];
             }
           }
+          // Sort each column chronologically by EXIF date (no date → end)
+          (["before", "process", "after"] as Stage[]).forEach((s) => {
+            updated[s] = [...updated[s]].sort((a, b) => exifTime(a) - exifTime(b));
+          });
           return updated;
         });
 
@@ -154,7 +172,8 @@ const Index = () => {
             const name = newItems.find((i) => i.id === c.id)?.name;
             const conf = Math.round(c.confidence * 100);
             const scene = sceneLabels[c.scene] || c.scene;
-            return `• ${name} → ${stageLabels[c.stage]} | ${scene} (${conf}%) — ${c.reason}`;
+            const stage = stageFromProgress(c.progress ?? 50);
+            return `• ${name} → ${stageLabels[stage]} | ${scene} | ${c.progress}% avance (conf ${conf}%) — ${c.reason}`;
           })
           .join("\n");
         addSystemMessage(`✅ Clasificación completada:\n${summary}`);
