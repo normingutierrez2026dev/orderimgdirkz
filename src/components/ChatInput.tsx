@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, Upload, Loader2 } from "lucide-react";
+import { Send, Sparkles, Loader2, FolderUp } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -19,6 +19,7 @@ interface ChatInputProps {
 const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying, isReplying }: ChatInputProps) => {
   const [input, setInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,7 +59,7 @@ const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying
       </div>
 
       {/* Input area */}
-      <div className="flex items-center gap-2 px-4 py-3">
+      <div className="flex items-center gap-2 px-4 py-3 flex-wrap">
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isClassifying}
@@ -77,6 +78,15 @@ const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying
           )}
         </button>
 
+        <button
+          onClick={() => folderInputRef.current?.click()}
+          disabled={isClassifying}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50 shadow-sm border border-border"
+        >
+          <FolderUp className="w-4 h-4" />
+          Subir Carpeta
+        </button>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -91,7 +101,27 @@ const ChatInput = ({ messages, onSendMessage, onUploadAndClassify, isClassifying
           }}
         />
 
-        <div className="flex-1 flex items-center gap-2 bg-background rounded-lg border border-input px-3 py-2">
+        <input
+          ref={folderInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          // @ts-expect-error non-standard but widely supported folder upload attrs
+          webkitdirectory=""
+          directory=""
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              const onlyImages = Array.from(e.target.files).filter((f) => f.type.startsWith("image/"));
+              if (onlyImages.length === 0) return;
+              const dt = new DataTransfer();
+              onlyImages.forEach((f) => dt.items.add(f));
+              onUploadAndClassify(dt.files);
+              e.target.value = "";
+            }
+          }}
+        />
+
+        <div className="flex-1 min-w-[200px] flex items-center gap-2 bg-background rounded-lg border border-input px-3 py-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}

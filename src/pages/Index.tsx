@@ -117,16 +117,29 @@ const Index = () => {
 
         if (error) throw new Error(error.message || "Error al clasificar");
 
-        const classifications: { id: string; stage: Stage; scene: string; confidence: number; reason: string }[] =
+        const classifications: { id: string; stage: Stage; scene: string; confidence: number; progress: number; reason: string }[] =
           data?.classifications || [];
+
+        // Derive stage from progress threshold (1-60 before, 61-90 process, 91-100 after)
+        const stageFromProgress = (p: number): Stage => (p <= 60 ? "before" : p <= 90 ? "process" : "after");
+
+        const exifTime = (item: any): number => {
+          const d = item?.exif?.date;
+          if (!d) return Number.POSITIVE_INFINITY;
+          // EXIF date format: "YYYY:MM:DD HH:MM:SS"
+          const iso = d.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+          const t = Date.parse(iso);
+          return isNaN(t) ? Number.POSITIVE_INFINITY : t;
+        };
 
         setImages((prev) => {
           const updated = { ...prev };
           for (const cls of classifications) {
             const item = newItems.find((i) => i.id === cls.id);
             if (item) {
-              updated[cls.stage] = [
-                ...updated[cls.stage],
+              const finalStage = stageFromProgress(cls.progress ?? 50);
+              updated[finalStage] = [
+                ...updated[finalStage],
                 {
                   id: item.id,
                   url: item.url,
@@ -135,11 +148,16 @@ const Index = () => {
                   reason: cls.reason,
                   scene: cls.scene,
                   confidence: cls.confidence,
+                  progress: cls.progress,
                   exif: item.exif,
                 },
               ];
             }
           }
+          // Sort each column chronologically by EXIF date (no date → end)
+          (["before", "process", "after"] as Stage[]).forEach((s) => {
+            updated[s] = [...updated[s]].sort((a, b) => exifTime(a) - exifTime(b));
+          });
           return updated;
         });
 
@@ -154,7 +172,8 @@ const Index = () => {
             const name = newItems.find((i) => i.id === c.id)?.name;
             const conf = Math.round(c.confidence * 100);
             const scene = sceneLabels[c.scene] || c.scene;
-            return `• ${name} → ${stageLabels[c.stage]} | ${scene} (${conf}%) — ${c.reason}`;
+            const stage = stageFromProgress(c.progress ?? 50);
+            return `• ${name} → ${stageLabels[stage]} | ${scene} | ${c.progress}% avance (conf ${conf}%) — ${c.reason}`;
           })
           .join("\n");
         addSystemMessage(`✅ Clasificación completada:\n${summary}`);
@@ -219,24 +238,27 @@ const Index = () => {
       return;
     }
     const zip = new JSZip();
+    const root = zip.folder("proyecto_order")!;
     const stageOrder: Stage[] = ["before", "process", "after"];
     const folderNames: Record<Stage, string> = { before: "01_Antes", process: "02_Proceso", after: "03_Despues" };
     let globalIndex = 1;
 
     for (const stage of stageOrder) {
-      const folder = zip.folder(folderNames[stage])!;
+      const folder = root.folder(folderNames[stage])!;
+      let localIndex = 1;
       for (const img of images[stage]) {
-        const ext = img.name.split(".").pop() || "jpg";
-        const fileName = `${String(globalIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
+        const ext = (img.name.split(".").pop() || "jpg").toLowerCase();
+        const fileName = `${String(globalIndex).padStart(3, "0")}_${String(localIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
         const response = await fetch(img.url);
         const blob = await response.blob();
         folder.file(fileName, blob);
         globalIndex++;
+        localIndex++;
       }
     }
 
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, `imagenes_clasificadas_${new Date().toISOString().slice(0, 10)}.zip`);
+    saveAs(content, `proyecto_order.zip`);
     addSystemMessage(`📦 Descarga generada con ${totalImages} imágenes organizadas.`);
   }, [images, totalImages]);
 
