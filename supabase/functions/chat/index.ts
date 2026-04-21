@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, imageContext } = await req.json();
+    const { message, imageContext, history } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -37,11 +37,18 @@ If asked to analyze or reorganize images, give recommendations based on the cont
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
+          ...(Array.isArray(history) ? history.slice(-10).map((m: { role: string; content: string }) => ({
+            role: m.role === "user" ? "user" : "assistant",
+            content: m.content,
+          })) : []),
           { role: "user", content: message },
         ],
+        reasoning: {
+          effort: "medium",
+        },
       }),
     });
 

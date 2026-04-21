@@ -399,15 +399,22 @@ const Index = () => {
   }, [images, totalClassified, totalImages, correctionRate]);
 
   const handleSendMessage = useCallback(async (text: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), text, timestamp: new Date(), type: "user" },
-    ]);
+    const newUserMsg = { id: crypto.randomUUID(), text, timestamp: new Date(), type: "user" as const };
+    setMessages((prev) => [...prev, newUserMsg]);
     setIsReplying(true);
+
+    // Build conversation history (last 10 turns) excluding system status messages
+    const history = [...messages, newUserMsg]
+      .filter((m) => !m.text.startsWith("✅") && !m.text.startsWith("❌") && !m.text.startsWith("⚠️"))
+      .slice(-10)
+      .map((m) => ({
+        role: m.type === "user" ? "user" : "assistant",
+        content: m.text.replace(/^🤖\s*/, ""),
+      }));
 
     try {
       const { data, error } = await supabase.functions.invoke("chat", {
-        body: { message: text, imageContext: buildImageContext() },
+        body: { message: text, imageContext: buildImageContext(), history },
       });
 
       if (error) throw new Error(error.message || "Error al consultar IA");
@@ -420,7 +427,7 @@ const Index = () => {
     } finally {
       setIsReplying(false);
     }
-  }, [buildImageContext]);
+  }, [buildImageContext, messages, addSystemMessage]);
 
   const stages: { key: Stage; title: string; colorClass: string; dotColor: string }[] = [
     { key: "before", title: "Antes", colorClass: "bg-stage-before", dotColor: "bg-stage-before" },
