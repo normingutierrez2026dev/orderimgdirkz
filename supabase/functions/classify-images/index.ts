@@ -50,7 +50,13 @@ For each image, classify it into:
 
 3. **Confidence** - your confidence level from 0.0 to 1.0
 
-4. **Progress** - estimated overall completion percentage of the work shown, integer 1-100:
+4. **Safety moderation** - detect sensitive content:
+   - "nudity": true if the image contains nude/partially nude people, exposed intimate body parts, sexual content, or underwear-only shots. false otherwise.
+   - "minors": true if the image clearly shows the face(s) of one or more people who appear to be UNDER 18 years old (children, teenagers). false if no people, only adults, or faces not visible/identifiable.
+   - "safety_reason": brief Spanish explanation when nudity OR minors is true (e.g. "Rostro de niño visible", "Persona sin camisa"). Empty string if both false.
+   Be conservative: only flag when reasonably certain. Construction workers fully clothed = false. Adults working = false.
+
+5. **Progress** - estimated overall completion percentage of the work shown, integer 1-100:
    - 1-60: work not started or just beginning (BEFORE)
    - 61-90: work in progress, partially done (PROCESS)
    - 91-100: work essentially complete (AFTER)
@@ -115,9 +121,12 @@ Here are the images to classify:`
                         scene: { type: "string", enum: ["interior_walls", "interior_ceiling", "interior_floor", "exterior_roof", "exterior_facade", "exterior_pavement", "other"] },
                         confidence: { type: "number", description: "Confidence 0.0-1.0" },
                         progress: { type: "integer", description: "Estimated work completion 1-100. 1-60=before, 61-90=process, 91-100=after.", minimum: 1, maximum: 100 },
+                        nudity: { type: "boolean", description: "True if image contains nudity, partial nudity or sexual content" },
+                        minors: { type: "boolean", description: "True if image clearly shows faces of people under 18 years old" },
+                        safety_reason: { type: "string", description: "Brief Spanish reason when nudity or minors is true, empty otherwise" },
                         reason: { type: "string", description: "Brief reason for classification in Spanish" }
                       },
-                      required: ["id", "stage", "scene", "confidence", "progress", "reason"],
+                      required: ["id", "stage", "scene", "confidence", "progress", "nudity", "minors", "safety_reason", "reason"],
                       additionalProperties: false
                     }
                   }

@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { Download, Loader2, Trash2, Moon, Sun } from "lucide-react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import royalLogo from "@/assets/royal-logo.png";
 import JSZip from "jszip";
@@ -13,6 +13,16 @@ import { toast } from "sonner";
 import { extractExif } from "@/lib/exif";
 import type { ImageItem, ChatMessage, Stage } from "@/lib/types";
 import { stageLabels, sceneLabels } from "@/lib/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -158,7 +168,7 @@ const Index = () => {
 
         if (error) throw new Error(error.message || "Error al clasificar");
 
-        const classifications: { id: string; stage: Stage; scene: string; confidence: number; progress: number; reason: string }[] =
+        const classifications: { id: string; stage: Stage; scene: string; confidence: number; progress: number; reason: string; nudity?: boolean; minors?: boolean; safety_reason?: string }[] =
           data?.classifications || [];
 
         // Derive stage from progress threshold (1-60 before, 61-90 process, 91-100 after)
@@ -173,12 +183,20 @@ const Index = () => {
           return isNaN(t) ? Number.POSITIVE_INFINITY : t;
         };
 
+        const flagged: { name: string; reason: string }[] = [];
+
         setImages((prev) => {
           const updated = { ...prev };
           for (const cls of classifications) {
             const item = newItems.find((i) => i.id === cls.id);
             if (item) {
               const finalStage = stageFromProgress(cls.progress ?? 50);
+              if (cls.nudity || cls.minors) {
+                flagged.push({
+                  name: item.name,
+                  reason: cls.safety_reason || (cls.nudity ? "Posible desnudez" : "Posible menor de edad"),
+                });
+              }
               updated[finalStage] = [
                 ...updated[finalStage],
                 {
@@ -191,6 +209,9 @@ const Index = () => {
                   confidence: cls.confidence,
                   progress: cls.progress,
                   exif: item.exif,
+                  nudity: !!cls.nudity,
+                  minors: !!cls.minors,
+                  safetyReason: cls.safety_reason || "",
                 },
               ];
             }
@@ -201,6 +222,12 @@ const Index = () => {
           });
           return updated;
         });
+
+        if (flagged.length > 0) {
+          const list = flagged.map((f) => `• ${f.name} — ${f.reason}`).join("\n");
+          addSystemMessage(`⚠️ Se detectó contenido sensible en ${flagged.length} imagen(es):\n${list}\nRevisa el aviso para decidir si descargas o eliminas estas fotos.`);
+          toast.warning(`Contenido sensible detectado en ${flagged.length} imagen(es)`);
+        }
 
         setPendingImages((prev) =>
           prev.filter((p) => !classifications.some((c) => c.id === p.id))
@@ -273,35 +300,80 @@ const Index = () => {
   const totalImages = images.before.length + images.process.length + images.after.length;
   const correctionRate = totalClassified > 0 ? Math.round((manualCorrections / totalClassified) * 100) : 0;
 
-  const handleDownload = useCallback(async () => {
-    if (totalImages === 0) {
-      toast.error("No hay imágenes para descargar");
-      return;
-    }
+  const flaggedImages = useMemo(() => {
+    const arr: { stage: Stage; img: ImageItem }[] = [];
+    (["before", "process", "after"] as Stage[]).forEach((s) => {
+      images[s].forEach((img) => {
+        if (img.nudity || img.minors) arr.push({ stage: s, img });
+      });
+    });
+    return arr;
+  }, [images]);
+
+  const [safetyDialogOpen, setSafetyDialogOpen] = useState(false);
+
+  const generateZip = useCallback(async (includeFlagged: boolean) => {
     const zip = new JSZip();
     const root = zip.folder("proyecto_order")!;
     const stageOrder: Stage[] = ["before", "process", "after"];
     const folderNames: Record<Stage, string> = { before: "01_Antes", process: "02_Proceso", after: "03_Despues" };
     let globalIndex = 1;
+    let included = 0;
+    let skipped = 0;
 
     for (const stage of stageOrder) {
       const folder = root.folder(folderNames[stage])!;
       let localIndex = 1;
       for (const img of images[stage]) {
+        const isFlagged = img.nudity || img.minors;
+        if (isFlagged && !includeFlagged) {
+          skipped++;
+          continue;
+        }
         const ext = (img.name.split(".").pop() || "jpg").toLowerCase();
-        const fileName = `${String(globalIndex).padStart(3, "0")}_${String(localIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
+        const prefix = isFlagged ? "SENSIBLE_" : "";
+        const fileName = `${prefix}${String(globalIndex).padStart(3, "0")}_${String(localIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
         const response = await fetch(img.url);
         const blob = await response.blob();
         folder.file(fileName, blob);
         globalIndex++;
         localIndex++;
+        included++;
       }
     }
 
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, `proyecto_order.zip`);
-    addSystemMessage(`📦 Descarga generada con ${totalImages} imágenes organizadas.`);
-  }, [images, totalImages]);
+    addSystemMessage(
+      `📦 Descarga generada con ${included} imágenes` +
+        (skipped > 0 ? ` (${skipped} sensibles excluidas).` : ".")
+    );
+  }, [images]);
+
+  const handleDownload = useCallback(async () => {
+    if (totalImages === 0) {
+      toast.error("No hay imágenes para descargar");
+      return;
+    }
+    if (flaggedImages.length > 0) {
+      setSafetyDialogOpen(true);
+      return;
+    }
+    await generateZip(true);
+  }, [totalImages, flaggedImages.length, generateZip]);
+
+  const removeAllFlagged = useCallback(() => {
+    setImages((prev) => {
+      const updated = { ...prev };
+      (["before", "process", "after"] as Stage[]).forEach((s) => {
+        updated[s] = updated[s].filter((img) => !img.nudity && !img.minors);
+      });
+      return updated;
+    });
+    toast.success(`${flaggedImages.length} imagen(es) sensible(s) eliminada(s)`);
+    addSystemMessage(`🗑️ Se eliminaron ${flaggedImages.length} imagen(es) marcadas como sensibles.`);
+    setSafetyDialogOpen(false);
+  }, [flaggedImages.length]);
 
   const buildImageContext = useCallback(() => {
     const lines: string[] = [];
@@ -404,6 +476,15 @@ const Index = () => {
               {pendingImages.length} pendientes
             </span>
           )}
+          {flaggedImages.length > 0 && (
+            <button
+              onClick={() => setSafetyDialogOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              {flaggedImages.length} sensible{flaggedImages.length > 1 ? "s" : ""}
+            </button>
+          )}
           {totalImages > 0 && (
             <button
               onClick={handleDownload}
@@ -465,6 +546,101 @@ const Index = () => {
 
       {/* Modal */}
       <ImagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
+
+      {/* Safety review dialog */}
+      <AlertDialog open={safetyDialogOpen} onOpenChange={setSafetyDialogOpen}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-destructive" />
+              Contenido sensible detectado
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Se detectaron {flaggedImages.length} imagen(es) que podrían contener desnudez o rostros de menores de edad.
+              Revisa la lista y decide cómo proceder.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="max-h-72 overflow-y-auto border border-border rounded-md divide-y divide-border">
+            {flaggedImages.map(({ stage, img }) => (
+              <div key={img.id} className="flex items-center gap-3 p-2">
+                <img
+                  src={img.url}
+                  alt={img.name}
+                  className="w-14 h-14 object-cover rounded border border-border flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-foreground truncate">{img.name}</div>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {img.nudity && (
+                      <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-medium">
+                        Desnudez
+                      </span>
+                    )}
+                    {img.minors && (
+                      <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-medium">
+                        Menor de edad
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px]">
+                      {stageLabels[stage]}
+                    </span>
+                  </div>
+                  {img.safetyReason && (
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">{img.safetyReason}</div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    removeImage(stage, img.id);
+                    toast.success("Imagen eliminada");
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 rounded bg-destructive/10 text-destructive text-xs hover:bg-destructive/20 transition-colors flex-shrink-0"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Eliminar
+                </button>
+              </div>
+            ))}
+            {flaggedImages.length === 0 && (
+              <div className="p-4 text-sm text-muted-foreground text-center">
+                Ya no hay imágenes sensibles.
+              </div>
+            )}
+          </div>
+
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cerrar</AlertDialogCancel>
+            {flaggedImages.length > 0 && (
+              <button
+                onClick={removeAllFlagged}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar todas las sensibles
+              </button>
+            )}
+            <button
+              onClick={async () => {
+                setSafetyDialogOpen(false);
+                await generateZip(false);
+              }}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Descargar sin sensibles
+            </button>
+            <AlertDialogAction
+              onClick={async () => {
+                await generateZip(true);
+              }}
+            >
+              <Download className="w-4 h-4 mr-1.5" />
+              Descargar todas
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
