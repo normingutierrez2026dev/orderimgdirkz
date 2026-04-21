@@ -121,9 +121,12 @@ Here are the images to classify:`
                         scene: { type: "string", enum: ["interior_walls", "interior_ceiling", "interior_floor", "exterior_roof", "exterior_facade", "exterior_pavement", "other"] },
                         confidence: { type: "number", description: "Confidence 0.0-1.0" },
                         progress: { type: "integer", description: "Estimated work completion 1-100. 1-60=before, 61-90=process, 91-100=after.", minimum: 1, maximum: 100 },
+                        nudity: { type: "boolean", description: "True if image contains nudity, partial nudity or sexual content" },
+                        minors: { type: "boolean", description: "True if image clearly shows faces of people under 18 years old" },
+                        safety_reason: { type: "string", description: "Brief Spanish reason when nudity or minors is true, empty otherwise" },
                         reason: { type: "string", description: "Brief reason for classification in Spanish" }
                       },
-                      required: ["id", "stage", "scene", "confidence", "progress", "reason"],
+                      required: ["id", "stage", "scene", "confidence", "progress", "nudity", "minors", "safety_reason", "reason"],
                       additionalProperties: false
                     }
                   }
