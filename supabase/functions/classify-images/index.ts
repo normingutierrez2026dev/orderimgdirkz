@@ -50,7 +50,13 @@ For each image, classify it into:
 
 3. **Confidence** - your confidence level from 0.0 to 1.0
 
-4. **Progress** - estimated overall completion percentage of the work shown, integer 1-100:
+4. **Safety moderation** - detect sensitive content:
+   - "nudity": true if the image contains nude/partially nude people, exposed intimate body parts, sexual content, or underwear-only shots. false otherwise.
+   - "minors": true if the image clearly shows the face(s) of one or more people who appear to be UNDER 18 years old (children, teenagers). false if no people, only adults, or faces not visible/identifiable.
+   - "safety_reason": brief Spanish explanation when nudity OR minors is true (e.g. "Rostro de niño visible", "Persona sin camisa"). Empty string if both false.
+   Be conservative: only flag when reasonably certain. Construction workers fully clothed = false. Adults working = false.
+
+5. **Progress** - estimated overall completion percentage of the work shown, integer 1-100:
    - 1-60: work not started or just beginning (BEFORE)
    - 61-90: work in progress, partially done (PROCESS)
    - 91-100: work essentially complete (AFTER)
