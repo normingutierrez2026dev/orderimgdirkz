@@ -311,7 +311,6 @@ const Index = () => {
   }, [images]);
 
   const [safetyDialogOpen, setSafetyDialogOpen] = useState(false);
-  const [includeFlaggedInDownload, setIncludeFlaggedInDownload] = useState(false);
 
   const generateZip = useCallback(async (includeFlagged: boolean) => {
     const zip = new JSZip();
