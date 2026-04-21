@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Download, Loader2, Trash2, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import royalLogo from "@/assets/royal-logo.png";
@@ -42,26 +42,66 @@ const resizeImage = (dataUrl: string, maxSize = 800): Promise<string> =>
     img.src = dataUrl;
   });
 
+const STORAGE_KEY = "royal_img_order_state_v1";
+
+const WELCOME_MSG: ChatMessage = {
+  id: "welcome",
+  text: "¡Bienvenido! Sube imágenes y la IA las clasificará automáticamente en Antes, Proceso y Después. Puedes arrastrar imágenes entre columnas si la IA se equivoca.",
+  timestamp: new Date(),
+  type: "system",
+};
+
+const loadInitialState = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const reviveImg = (i: any): ImageItem => ({ ...i, timestamp: new Date(i.timestamp) });
+    return {
+      images: {
+        before: (parsed.images?.before || []).map(reviveImg),
+        process: (parsed.images?.process || []).map(reviveImg),
+        after: (parsed.images?.after || []).map(reviveImg),
+      } as Record<Stage, ImageItem[]>,
+      manualCorrections: parsed.manualCorrections || 0,
+      totalClassified: parsed.totalClassified || 0,
+      messages: (parsed.messages || [WELCOME_MSG]).map((m: any) => ({
+        ...m,
+        timestamp: new Date(m.timestamp),
+      })) as ChatMessage[],
+    };
+  } catch {
+    return null;
+  }
+};
+
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
-  const [images, setImages] = useState<Record<Stage, ImageItem[]>>({
-    before: [],
-    process: [],
-    after: [],
-  });
+  const initial = useRef(loadInitialState()).current;
+  const [images, setImages] = useState<Record<Stage, ImageItem[]>>(
+    initial?.images || { before: [], process: [], after: [] }
+  );
   const [pendingImages, setPendingImages] = useState<ImageItem[]>([]);
   const [isClassifying, setIsClassifying] = useState(false);
-  const [manualCorrections, setManualCorrections] = useState(0);
-  const [totalClassified, setTotalClassified] = useState(0);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      text: "¡Bienvenido! Sube imágenes y la IA las clasificará automáticamente en Antes, Proceso y Después. Puedes arrastrar imágenes entre columnas si la IA se equivoca.",
-      timestamp: new Date(),
-      type: "system",
-    },
-  ]);
+  const [manualCorrections, setManualCorrections] = useState(initial?.manualCorrections || 0);
+  const [totalClassified, setTotalClassified] = useState(initial?.totalClassified || 0);
+  const [messages, setMessages] = useState<ChatMessage[]>(initial?.messages || [WELCOME_MSG]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Persist to LocalStorage whenever ordered state changes
+  useEffect(() => {
+    try {
+      const payload = {
+        images,
+        manualCorrections,
+        totalClassified,
+        messages,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      console.warn("LocalStorage save failed (likely quota exceeded):", e);
+    }
+  }, [images, manualCorrections, totalClassified, messages]);
 
   const addSystemMessage = (text: string) => {
     setMessages((prev) => [
