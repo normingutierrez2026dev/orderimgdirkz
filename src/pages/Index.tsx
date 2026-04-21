@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { Download, Loader2, Trash2, Moon, Sun } from "lucide-react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import royalLogo from "@/assets/royal-logo.png";
 import JSZip from "jszip";
@@ -13,6 +13,16 @@ import { toast } from "sonner";
 import { extractExif } from "@/lib/exif";
 import type { ImageItem, ChatMessage, Stage } from "@/lib/types";
 import { stageLabels, sceneLabels } from "@/lib/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
