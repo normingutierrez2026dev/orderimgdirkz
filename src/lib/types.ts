@@ -10,6 +10,9 @@ export interface ImageItem {
   confidence?: number;
   progress?: number;
   exif?: ExifData | null;
+  nudity?: boolean;
+  minors?: boolean;
+  safetyReason?: string;
 }
 
 export interface ChatMessage {
