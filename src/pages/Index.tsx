@@ -300,35 +300,81 @@ const Index = () => {
   const totalImages = images.before.length + images.process.length + images.after.length;
   const correctionRate = totalClassified > 0 ? Math.round((manualCorrections / totalClassified) * 100) : 0;
 
-  const handleDownload = useCallback(async () => {
-    if (totalImages === 0) {
-      toast.error("No hay imágenes para descargar");
-      return;
-    }
+  const flaggedImages = useMemo(() => {
+    const arr: { stage: Stage; img: ImageItem }[] = [];
+    (["before", "process", "after"] as Stage[]).forEach((s) => {
+      images[s].forEach((img) => {
+        if (img.nudity || img.minors) arr.push({ stage: s, img });
+      });
+    });
+    return arr;
+  }, [images]);
+
+  const [safetyDialogOpen, setSafetyDialogOpen] = useState(false);
+  const [includeFlaggedInDownload, setIncludeFlaggedInDownload] = useState(false);
+
+  const generateZip = useCallback(async (includeFlagged: boolean) => {
     const zip = new JSZip();
     const root = zip.folder("proyecto_order")!;
     const stageOrder: Stage[] = ["before", "process", "after"];
     const folderNames: Record<Stage, string> = { before: "01_Antes", process: "02_Proceso", after: "03_Despues" };
     let globalIndex = 1;
+    let included = 0;
+    let skipped = 0;
 
     for (const stage of stageOrder) {
       const folder = root.folder(folderNames[stage])!;
       let localIndex = 1;
       for (const img of images[stage]) {
+        const isFlagged = img.nudity || img.minors;
+        if (isFlagged && !includeFlagged) {
+          skipped++;
+          continue;
+        }
         const ext = (img.name.split(".").pop() || "jpg").toLowerCase();
-        const fileName = `${String(globalIndex).padStart(3, "0")}_${String(localIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
+        const prefix = isFlagged ? "SENSIBLE_" : "";
+        const fileName = `${prefix}${String(globalIndex).padStart(3, "0")}_${String(localIndex).padStart(3, "0")}_${stageLabels[stage]}.${ext}`;
         const response = await fetch(img.url);
         const blob = await response.blob();
         folder.file(fileName, blob);
         globalIndex++;
         localIndex++;
+        included++;
       }
     }
 
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, `proyecto_order.zip`);
-    addSystemMessage(`📦 Descarga generada con ${totalImages} imágenes organizadas.`);
-  }, [images, totalImages]);
+    addSystemMessage(
+      `📦 Descarga generada con ${included} imágenes` +
+        (skipped > 0 ? ` (${skipped} sensibles excluidas).` : ".")
+    );
+  }, [images]);
+
+  const handleDownload = useCallback(async () => {
+    if (totalImages === 0) {
+      toast.error("No hay imágenes para descargar");
+      return;
+    }
+    if (flaggedImages.length > 0) {
+      setSafetyDialogOpen(true);
+      return;
+    }
+    await generateZip(true);
+  }, [totalImages, flaggedImages.length, generateZip]);
+
+  const removeAllFlagged = useCallback(() => {
+    setImages((prev) => {
+      const updated = { ...prev };
+      (["before", "process", "after"] as Stage[]).forEach((s) => {
+        updated[s] = updated[s].filter((img) => !img.nudity && !img.minors);
+      });
+      return updated;
+    });
+    toast.success(`${flaggedImages.length} imagen(es) sensible(s) eliminada(s)`);
+    addSystemMessage(`🗑️ Se eliminaron ${flaggedImages.length} imagen(es) marcadas como sensibles.`);
+    setSafetyDialogOpen(false);
+  }, [flaggedImages.length]);
 
   const buildImageContext = useCallback(() => {
     const lines: string[] = [];
