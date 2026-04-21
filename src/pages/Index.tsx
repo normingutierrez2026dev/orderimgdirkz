@@ -168,7 +168,7 @@ const Index = () => {
 
         if (error) throw new Error(error.message || "Error al clasificar");
 
-        const classifications: { id: string; stage: Stage; scene: string; confidence: number; progress: number; reason: string }[] =
+        const classifications: { id: string; stage: Stage; scene: string; confidence: number; progress: number; reason: string; nudity?: boolean; minors?: boolean; safety_reason?: string }[] =
           data?.classifications || [];
 
         // Derive stage from progress threshold (1-60 before, 61-90 process, 91-100 after)
@@ -183,12 +183,20 @@ const Index = () => {
           return isNaN(t) ? Number.POSITIVE_INFINITY : t;
         };
 
+        const flagged: { name: string; reason: string }[] = [];
+
         setImages((prev) => {
           const updated = { ...prev };
           for (const cls of classifications) {
             const item = newItems.find((i) => i.id === cls.id);
             if (item) {
               const finalStage = stageFromProgress(cls.progress ?? 50);
+              if (cls.nudity || cls.minors) {
+                flagged.push({
+                  name: item.name,
+                  reason: cls.safety_reason || (cls.nudity ? "Posible desnudez" : "Posible menor de edad"),
+                });
+              }
               updated[finalStage] = [
                 ...updated[finalStage],
                 {
@@ -201,6 +209,9 @@ const Index = () => {
                   confidence: cls.confidence,
                   progress: cls.progress,
                   exif: item.exif,
+                  nudity: !!cls.nudity,
+                  minors: !!cls.minors,
+                  safetyReason: cls.safety_reason || "",
                 },
               ];
             }
@@ -211,6 +222,12 @@ const Index = () => {
           });
           return updated;
         });
+
+        if (flagged.length > 0) {
+          const list = flagged.map((f) => `• ${f.name} — ${f.reason}`).join("\n");
+          addSystemMessage(`⚠️ Se detectó contenido sensible en ${flagged.length} imagen(es):\n${list}\nRevisa el aviso para decidir si descargas o eliminas estas fotos.`);
+          toast.warning(`Contenido sensible detectado en ${flagged.length} imagen(es)`);
+        }
 
         setPendingImages((prev) =>
           prev.filter((p) => !classifications.some((c) => c.id === p.id))
