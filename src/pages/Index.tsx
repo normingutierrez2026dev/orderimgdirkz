@@ -472,10 +472,14 @@ const Index = () => {
               {correctionRate}% correcciones
             </span>
           )}
-          {pendingImages.length > 0 && (
-            <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">
-              {pendingImages.length} pendientes
-            </span>
+          {flaggedImages.length > 0 && (
+            <button
+              onClick={() => setSafetyDialogOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              {flaggedImages.length} sensible{flaggedImages.length > 1 ? "s" : ""}
+            </button>
           )}
           {totalImages > 0 && (
             <button
