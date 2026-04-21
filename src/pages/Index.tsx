@@ -239,7 +239,7 @@ const Index = () => {
           const [dataUrl, exif] = await Promise.all([fileToDataUrl(f), extractExif(f)]);
           return {
             id: crypto.randomUUID(),
-            url: URL.createObjectURL(f),
+            url: dataUrl, // persistable in LocalStorage (blob: URLs do not survive reloads)
             name: f.name,
             dataUrl,
             exif,
@@ -420,12 +420,13 @@ const Index = () => {
                 setPendingImages([]);
                 setManualCorrections(0);
                 setTotalClassified(0);
-                setMessages([{
-                  id: "welcome",
-                  text: "¡Bienvenido! Sube imágenes y la IA las clasificará automáticamente en Antes, Proceso y Después. Puedes arrastrar imágenes entre columnas si la IA se equivoca.",
-                  timestamp: new Date(),
-                  type: "system",
-                }]);
+                setMessages([WELCOME_MSG]);
+                try {
+                  localStorage.removeItem(STORAGE_KEY);
+                } catch (e) {
+                  console.warn("LocalStorage clear failed:", e);
+                }
+                toast.success("Almacenamiento local limpiado");
               }}
               className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
             >
