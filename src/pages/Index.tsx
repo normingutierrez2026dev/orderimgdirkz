@@ -472,6 +472,11 @@ const Index = () => {
               {correctionRate}% correcciones
             </span>
           )}
+          {pendingImages.length > 0 && (
+            <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">
+              {pendingImages.length} pendientes
+            </span>
+          )}
           {flaggedImages.length > 0 && (
             <button
               onClick={() => setSafetyDialogOpen(true)}
