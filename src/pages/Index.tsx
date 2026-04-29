@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert, LogOut } from "lucide-react";
+import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert, LogOut, MessageSquare, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/hooks/useAuth";
 import royalLogo from "@/assets/royal-logo.png";
@@ -99,6 +99,15 @@ const Index = () => {
   const [totalClassified, setTotalClassified] = useState(initial?.totalClassified || 0);
   const [messages, setMessages] = useState<ChatMessage[]>(initial?.messages || [WELCOME_MSG]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [chatPosition, setChatPosition] = useState<"left" | "right" | "top" | "bottom">(
+    () => (localStorage.getItem("chat_position") as any) || "left"
+  );
+  const [chatVisible, setChatVisible] = useState<boolean>(
+    () => localStorage.getItem("chat_visible") !== "false"
+  );
+
+  useEffect(() => { localStorage.setItem("chat_position", chatPosition); }, [chatPosition]);
+  useEffect(() => { localStorage.setItem("chat_visible", String(chatVisible)); }, [chatVisible]);
 
   // Persist to LocalStorage whenever ordered state changes
   useEffect(() => {
@@ -457,6 +466,39 @@ const Index = () => {
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {/* Chat position controls */}
+          <div className="flex items-center gap-1 bg-muted rounded-full p-1">
+            <button
+              onClick={() => setChatVisible((v) => !v)}
+              aria-label={chatVisible ? "Ocultar chat" : "Mostrar chat"}
+              title={chatVisible ? "Ocultar chat" : "Mostrar chat"}
+              className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${
+                chatVisible ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+            </button>
+            {chatVisible && (
+              <>
+                <button onClick={() => setChatPosition("left")} title="Chat a la izquierda"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${chatPosition==="left"?"bg-primary text-primary-foreground":"text-muted-foreground hover:bg-accent"}`}>
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setChatPosition("right")} title="Chat a la derecha"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${chatPosition==="right"?"bg-primary text-primary-foreground":"text-muted-foreground hover:bg-accent"}`}>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setChatPosition("top")} title="Chat arriba"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${chatPosition==="top"?"bg-primary text-primary-foreground":"text-muted-foreground hover:bg-accent"}`}>
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setChatPosition("bottom")} title="Chat abajo"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${chatPosition==="bottom"?"bg-primary text-primary-foreground":"text-muted-foreground hover:bg-accent"}`}>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+          </div>
           <button
             onClick={toggleTheme}
             aria-label="Cambiar tema"
@@ -537,31 +579,78 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Columns with DnD */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <main className="flex-1 flex gap-4 p-4 overflow-hidden">
-          {stages.map((stage) => (
-            <ImageStageColumn
-              key={stage.key}
-              stageKey={stage.key}
-              title={stage.title}
-              dotColor={stage.dotColor}
-              images={images[stage.key]}
-              onRemoveImage={(id) => removeImage(stage.key, id)}
-              onPreview={setPreviewUrl}
-            />
-          ))}
-        </main>
-      </DragDropContext>
+      {/* Body: columns + chat in a positionable layout */}
+      {(() => {
+        const isHorizontal = chatPosition === "left" || chatPosition === "right";
+        const containerDir =
+          chatPosition === "left" ? "flex-row" :
+          chatPosition === "right" ? "flex-row-reverse" :
+          chatPosition === "top" ? "flex-col" :
+          "flex-col-reverse";
+        const chatSizeClass = chatVisible
+          ? (isHorizontal ? "w-[380px] max-w-[40vw] h-full border-r border-l border-border" : "h-[42vh] w-full")
+          : "";
+        return (
+          <div className={`flex-1 flex ${containerDir} overflow-hidden min-h-0`}>
+            {/* Columns with DnD */}
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <main className="flex-1 flex gap-4 p-4 overflow-hidden min-w-0 min-h-0">
+                {stages.map((stage) => (
+                  <ImageStageColumn
+                    key={stage.key}
+                    stageKey={stage.key}
+                    title={stage.title}
+                    dotColor={stage.dotColor}
+                    images={images[stage.key]}
+                    onRemoveImage={(id) => removeImage(stage.key, id)}
+                    onPreview={setPreviewUrl}
+                  />
+                ))}
+              </main>
+            </DragDropContext>
 
-      {/* Chat / Upload */}
-      <ChatInput
-        messages={messages}
-        onSendMessage={handleSendMessage}
-        onUploadAndClassify={handleUploadAndClassify}
-        isClassifying={isClassifying}
-        isReplying={isReplying}
-      />
+            {/* Chat panel */}
+            {chatVisible && (
+              <aside className={`flex flex-col bg-card ${chatSizeClass} flex-shrink-0`}>
+                <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
+                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    Asistente
+                  </div>
+                  <button
+                    onClick={() => setChatVisible(false)}
+                    aria-label="Ocultar chat"
+                    className="p-1 rounded hover:bg-accent text-muted-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex-1 flex flex-col min-h-0">
+                  <ChatInput
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    onUploadAndClassify={handleUploadAndClassify}
+                    isClassifying={isClassifying}
+                    isReplying={isReplying}
+                  />
+                </div>
+              </aside>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Floating button to reopen chat when hidden */}
+      {!chatVisible && (
+        <button
+          onClick={() => setChatVisible(true)}
+          aria-label="Mostrar chat"
+          className="fixed bottom-4 right-4 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 active:scale-95 transition-all"
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span className="text-sm font-medium">Chat</span>
+        </button>
+      )}
 
       {/* Modal */}
       <ImagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
