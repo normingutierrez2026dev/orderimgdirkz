@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert } from "lucide-react";
+import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert, LogOut } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/hooks/useAuth";
 import royalLogo from "@/assets/royal-logo.png";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -87,6 +88,7 @@ const loadInitialState = () => {
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
+  const { signOut, user } = useAuth();
   const initial = useRef(loadInitialState()).current;
   const [images, setImages] = useState<Record<Stage, ImageItem[]>>(
     initial?.images || { before: [], process: [], after: [] }
@@ -462,6 +464,16 @@ const Index = () => {
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+          {user && (
+            <button
+              onClick={signOut}
+              aria-label="Cerrar sesión"
+              title={user.email || "Cerrar sesión"}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
           {isClassifying && (
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-stage-process/10 text-stage-process text-xs font-medium">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
