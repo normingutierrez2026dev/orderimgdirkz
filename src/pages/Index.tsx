@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert, LogOut } from "lucide-react";
+import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert, LogOut, MessageSquare, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/hooks/useAuth";
 import royalLogo from "@/assets/royal-logo.png";
