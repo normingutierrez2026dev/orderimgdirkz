@@ -472,6 +472,45 @@ const Index = () => {
             className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {/* Chat position controls */}
+          <div className="flex items-center gap-1 bg-muted rounded-full p-1">
+            <button
+              onClick={() => setChatVisible((v) => !v)}
+              aria-label={chatVisible ? "Ocultar chat" : "Mostrar chat"}
+              title={chatVisible ? "Ocultar chat" : "Mostrar chat"}
+              className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${
+                chatVisible ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+            </button>
+            {chatVisible && (
+              <>
+                <button onClick={() => setChatPosition("left")} title="Chat a la izquierda"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${chatPosition==="left"?"bg-primary text-primary-foreground":"text-muted-foreground hover:bg-accent"}`}>
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setChatPosition("right")} title="Chat a la derecha"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${chatPosition==="right"?"bg-primary text-primary-foreground":"text-muted-foreground hover:bg-accent"}`}>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setChatPosition("top")} title="Chat arriba"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${chatPosition==="top"?"bg-primary text-primary-foreground":"text-muted-foreground hover:bg-accent"}`}>
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setChatPosition("bottom")} title="Chat abajo"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${chatPosition==="bottom"?"bg-primary text-primary-foreground":"text-muted-foreground hover:bg-accent"}`}>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+          <button
+            onClick={toggleTheme}
+            aria-label="Cambiar tema"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           {user && (
             <button
