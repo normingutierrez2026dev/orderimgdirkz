@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,10 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_MESSAGE_LEN = 2000;
-const MAX_CONTEXT_LEN = 5000;
 const MAX_HISTORY = 10;
-const MAX_HISTORY_ITEM_LEN = 2000;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -18,38 +14,13 @@ serve(async (req) => {
   }
 
   try {
-    // Auth check
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "No autorizado" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "No autorizado" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const body = await req.json();
     const message = typeof body?.message === "string" ? body.message : "";
     const imageContext = typeof body?.imageContext === "string" ? body.imageContext : "";
     const history = Array.isArray(body?.history) ? body.history : [];
 
-    if (!message || message.length > MAX_MESSAGE_LEN) {
-      return new Response(JSON.stringify({ error: `El mensaje debe tener entre 1 y ${MAX_MESSAGE_LEN} caracteres.` }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (imageContext.length > MAX_CONTEXT_LEN) {
-      return new Response(JSON.stringify({ error: "Contexto demasiado grande." }), {
+    if (!message) {
+      return new Response(JSON.stringify({ error: "Mensaje vacío." }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -59,7 +30,7 @@ serve(async (req) => {
       .filter((m: any) => m && typeof m.content === "string" && typeof m.role === "string")
       .map((m: any) => ({
         role: m.role === "user" ? "user" : "assistant",
-        content: String(m.content).slice(0, MAX_HISTORY_ITEM_LEN),
+        content: String(m.content),
       }));
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -69,6 +40,7 @@ serve(async (req) => {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const systemPrompt = `You are an expert assistant for organizing images from construction, painting, and remodeling projects.
 You help users understand the classification of their images, suggest improvements in organization, and answer questions about the project status.
