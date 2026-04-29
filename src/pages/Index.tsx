@@ -579,31 +579,78 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Columns with DnD */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <main className="flex-1 flex gap-4 p-4 overflow-hidden">
-          {stages.map((stage) => (
-            <ImageStageColumn
-              key={stage.key}
-              stageKey={stage.key}
-              title={stage.title}
-              dotColor={stage.dotColor}
-              images={images[stage.key]}
-              onRemoveImage={(id) => removeImage(stage.key, id)}
-              onPreview={setPreviewUrl}
-            />
-          ))}
-        </main>
-      </DragDropContext>
+      {/* Body: columns + chat in a positionable layout */}
+      {(() => {
+        const isHorizontal = chatPosition === "left" || chatPosition === "right";
+        const containerDir =
+          chatPosition === "left" ? "flex-row" :
+          chatPosition === "right" ? "flex-row-reverse" :
+          chatPosition === "top" ? "flex-col" :
+          "flex-col-reverse";
+        const chatSizeClass = chatVisible
+          ? (isHorizontal ? "w-[380px] max-w-[40vw] h-full border-r border-l border-border" : "h-[42vh] w-full")
+          : "";
+        return (
+          <div className={`flex-1 flex ${containerDir} overflow-hidden min-h-0`}>
+            {/* Columns with DnD */}
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <main className="flex-1 flex gap-4 p-4 overflow-hidden min-w-0 min-h-0">
+                {stages.map((stage) => (
+                  <ImageStageColumn
+                    key={stage.key}
+                    stageKey={stage.key}
+                    title={stage.title}
+                    dotColor={stage.dotColor}
+                    images={images[stage.key]}
+                    onRemoveImage={(id) => removeImage(stage.key, id)}
+                    onPreview={setPreviewUrl}
+                  />
+                ))}
+              </main>
+            </DragDropContext>
 
-      {/* Chat / Upload */}
-      <ChatInput
-        messages={messages}
-        onSendMessage={handleSendMessage}
-        onUploadAndClassify={handleUploadAndClassify}
-        isClassifying={isClassifying}
-        isReplying={isReplying}
-      />
+            {/* Chat panel */}
+            {chatVisible && (
+              <aside className={`flex flex-col bg-card ${chatSizeClass} flex-shrink-0`}>
+                <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
+                  <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    Asistente
+                  </div>
+                  <button
+                    onClick={() => setChatVisible(false)}
+                    aria-label="Ocultar chat"
+                    className="p-1 rounded hover:bg-accent text-muted-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex-1 flex flex-col min-h-0">
+                  <ChatInput
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    onUploadAndClassify={handleUploadAndClassify}
+                    isClassifying={isClassifying}
+                    isReplying={isReplying}
+                  />
+                </div>
+              </aside>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Floating button to reopen chat when hidden */}
+      {!chatVisible && (
+        <button
+          onClick={() => setChatVisible(true)}
+          aria-label="Mostrar chat"
+          className="fixed bottom-4 right-4 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 active:scale-95 transition-all"
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span className="text-sm font-medium">Chat</span>
+        </button>
+      )}
 
       {/* Modal */}
       <ImagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
