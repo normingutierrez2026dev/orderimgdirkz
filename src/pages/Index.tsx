@@ -99,6 +99,15 @@ const Index = () => {
   const [totalClassified, setTotalClassified] = useState(initial?.totalClassified || 0);
   const [messages, setMessages] = useState<ChatMessage[]>(initial?.messages || [WELCOME_MSG]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [chatPosition, setChatPosition] = useState<"left" | "right" | "top" | "bottom">(
+    () => (localStorage.getItem("chat_position") as any) || "left"
+  );
+  const [chatVisible, setChatVisible] = useState<boolean>(
+    () => localStorage.getItem("chat_visible") !== "false"
+  );
+
+  useEffect(() => { localStorage.setItem("chat_position", chatPosition); }, [chatPosition]);
+  useEffect(() => { localStorage.setItem("chat_visible", String(chatVisible)); }, [chatVisible]);
 
   // Persist to LocalStorage whenever ordered state changes
   useEffect(() => {
