@@ -466,12 +466,6 @@ const Index = () => {
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            aria-label="Cambiar tema"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           {/* Chat position controls */}
           <div className="flex items-center gap-1 bg-muted rounded-full p-1">
             <button
