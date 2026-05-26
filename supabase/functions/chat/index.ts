@@ -60,13 +60,12 @@ If asked to analyze or reorganize images, give recommendations based on the cont
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           ...safeHistory,
           { role: "user", content: message },
         ],
-        reasoning: { effort: "medium" },
       }),
     });
 
