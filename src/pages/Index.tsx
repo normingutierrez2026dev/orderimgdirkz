@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Download, Loader2, Trash2, Moon, Sun, ShieldAlert, LogOut, MessageSquare, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/hooks/useAuth";
-import royalLogo from "@/assets/royal-logo.png";
+import orderImgLogo from "@/assets/order-img-logo.png";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
@@ -53,7 +53,7 @@ const resizeImage = (dataUrl: string, maxSize = 800): Promise<string> =>
     img.src = dataUrl;
   });
 
-const STORAGE_KEY = "royal_img_order_state_v1";
+const STORAGE_KEY = "order_img_state_v1";
 
 const WELCOME_MSG: ChatMessage = {
   id: "welcome",
@@ -451,15 +451,15 @@ const Index = () => {
       {/* Header */}
       <header className="flex items-center gap-3 px-6 py-4 border-b border-border bg-card/80 backdrop-blur-sm">
         <img
-          src={royalLogo}
-          alt="Royal Img Order logo"
+          src={orderImgLogo}
+          alt="Order Img logo"
           width={40}
           height={40}
           className="w-10 h-10 object-contain"
         />
         <div>
           <h1 className="text-lg font-bold leading-tight text-foreground">
-            Royal Img Order
+            Order Img
           </h1>
           <p className="text-xs text-muted-foreground">
             Clasificación automática · Arrastra para corregir
