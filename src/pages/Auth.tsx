@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import royalLogo from "@/assets/royal-logo.png";
+import orderImgLogo from "@/assets/order-img-logo.png";
 
 const credSchema = z.object({
   email: z.string().trim().email("Email inválido").max(255),
@@ -75,8 +75,8 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-8 space-y-6">
         <div className="flex flex-col items-center gap-2">
-          <img src={royalLogo} alt="Royal Img Order" className="w-16 h-16" />
-          <h1 className="text-2xl font-bold">Royal Img Order</h1>
+          <img src={orderImgLogo} alt="Order Img" className="w-16 h-16" />
+          <h1 className="text-2xl font-bold">Order Img</h1>
           <p className="text-sm text-muted-foreground">
             {mode === "login" ? "Inicia sesión para continuar" : "Crea tu cuenta"}
           </p>
