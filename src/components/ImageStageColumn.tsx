@@ -28,7 +28,7 @@ const ImageStageColumn = ({
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 mb-3">
         <span className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
-        <h2 className="text-sm font-semibold tracking-wide uppercase text-foreground/80">
+        <h2 className="text-base font-bold tracking-tight text-foreground">
           {title}
         </h2>
         <span className="ml-auto text-xs font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
@@ -42,10 +42,10 @@ const ImageStageColumn = ({
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 rounded-xl border-2 border-dashed transition-colors duration-200 overflow-y-auto scroll-hidden p-3 space-y-3 ${
+            className={`flex-1 rounded-2xl border transition-colors duration-200 overflow-y-auto scroll-hidden p-3 space-y-3 ${
               snapshot.isDraggingOver || isDragging
                 ? `border-stage-${stageKey} bg-stage-${stageKey}/5`
-                : "border-border bg-card/60"
+                : "border-border/60 bg-card/40 backdrop-blur-md shadow-[0_0_0_1px_hsl(var(--primary)/0.05)]"
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
