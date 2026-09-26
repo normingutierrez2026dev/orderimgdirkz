@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -35,7 +35,7 @@
     --input: 33 50% 88%;
     --ring: 270 70% 45%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     --stage-before: 270 70% 45%;
     --stage-process: 280 65% 55%;
@@ -55,35 +55,26 @@
   .dark {
     --background: 0 0% 0%;
     --foreground: 0 0% 98%;
-
-    --card: 270 15% 10%;
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 98%;
-
-    --popover: 270 15% 10%;
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
-
-    --primary: 270 80% 60%;
+    --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 270 15% 16%;
+    --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
-
-    --muted: 270 12% 14%;
-    --muted-foreground: 270 10% 65%;
-
-    --accent: 280 85% 65%;
-    --accent-foreground: 0 0% 5%;
-
+    --muted: 0 0% 11%;
+    --muted-foreground: 255 15% 70%;
+    --accent: 252 95% 85%;
+    --accent-foreground: 262 60% 12%;
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 270 15% 20%;
-    --input: 270 15% 18%;
-    --ring: 270 80% 60%;
-
-    --stage-before: 270 80% 60%;
-    --stage-process: 285 75% 65%;
-    --stage-after: 260 85% 55%;
+    --border: 0 0% 16%;
+    --input: 0 0% 14%;
+    --ring: 262 83% 58%;
+    --stage-before: 262 83% 58%;
+    --stage-process: 270 90% 70%;
+    --stage-after: 252 95% 85%;
   }
 }
 
@@ -94,7 +85,10 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.18), transparent 70%);
+    background-attachment: fixed;
   }
+  h1, h2, h3 { @apply font-display tracking-tight; }
 }
 
 @layer utilities {

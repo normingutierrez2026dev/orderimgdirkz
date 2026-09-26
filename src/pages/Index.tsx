@@ -449,7 +449,7 @@ const Index = () => {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <header className="flex items-center gap-3 px-6 py-4 border-b border-border bg-card/80 backdrop-blur-sm">
+      <header className="flex items-center gap-3 px-6 py-4 border-b border-border/60 bg-card/50 backdrop-blur-xl sticky top-0 z-30">
         <img
           src={orderImgLogo}
           alt="Order Img logo"
@@ -458,7 +458,7 @@ const Index = () => {
           className="w-10 h-10 object-contain"
         />
         <div>
-          <h1 className="text-lg font-bold leading-tight text-foreground">
+          <h1 className="text-xl font-extrabold leading-tight text-foreground">
             Order Img
           </h1>
           <p className="text-xs text-muted-foreground">
